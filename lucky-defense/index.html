@@ -211,6 +211,8 @@ details+details{margin-top:.5rem}
       <div class="panel">
         <h3>Mythici <span class="muted small">(úroveň 0–15)</span></h3>
         <div class="lvlgrid" id="in-mythic"></div>
+        <h3 style="margin-top:.9rem">Immortalové <span class="muted small">(0 = neodemčeno)</span></h3>
+        <div class="lvlgrid" id="in-immortal"></div>
       </div>
       <div>
         <div class="panel" style="margin-bottom:1rem">
@@ -522,7 +524,10 @@ const fmt = n => n.toLocaleString("cs-CZ");
 // Guardians the planner tracks
 const MYTHICS = [
   ["hailey","Hailey"],["kun","Master Kun"],["chu","Rocket Chu"],["tao","Lazy Taoist"],["kitty","Kitty Mage"],["lance","Lancelot"],["mono","Monopoly Man"],
-  ["watt","Watt"],["indy","Indy"],["vayne","Vayne"],["bomba","Bomba"],["orc","Orc Shaman"],["grav","Graviton"],["frog","Frog Prince"],["batman","Bat Man"],["meow","Iron Meow"],["ato","Ato"],
+  ["watt","Watt"],["indy","Indy"],["vayne","Vayne"],["bomba","Bomba"],["orc","Orc Shaman"],["grav","Graviton"],["frog","Frog Prince"],["batman","Bat Man"],["meow","Iron Meow"],["ato","Ato"],["roka","Roka"],
+];
+const IMMORTALS = [
+  ["i_hailey","Awakened Hailey"],["i_frog","Reaper Frog"],["i_roka","Captain Roka"],["i_lance","Knight Lancelot"],["i_mono","Devil Monopoly"],["i_grav","Super Graviton"],["i_bomba","Primeval Bomba"],["i_ato","Chrono Ato"],
 ];
 const BASE = [
   ["bandit","Bandit","common"],["shock","Shock Robot","rare"],["electro","Electro Robot","epic"],["tree","Tree","epic"],["eagle","Eagle General","epic"],["hunter","Hunter","epic"],["wolf","Wolf Warrior","epic"],
@@ -591,10 +596,27 @@ const ROADMAP = [
     {k:"ato",r:"mythic",lv:12,why:"Fyzická obdoba Kitty: 20 DR, +15 % fyz. dmg, zkracuje cooldown ultů (Chu, Vayne, Bomba). Vede k Chrono Ato."},
     {k:"frog",r:"mythic",lv:15,why:"Volitelné: Reaper Frog (immortal) je extrémně silný wave clear a jde brzo. Wolf + Tree + Barbarian + Thrower."},
   ]},
-  {id:"e4",title:"Volitelné / immortalové",goals:["hell"],steps:[
+  {id:"e4",title:"Volitelné",goals:["hell"],steps:[
     {k:"grav",r:"mythic",lv:12,why:"Graviton 12: 4,5 s stun, 13 % šance, 1 mythik nahradí stack robotů. S pokladem ještě lepší."},
-    {k:"hailey",r:"mythic",lv:15,why:"Hailey 15 + 6000 gemů = Awakened Hailey, obvykle první immortal (ATK boost jako 285k zlata v MG1)."},
     {k:"batman",r:"mythic",lv:6,why:"Bat Man je spolehlivý fyzický wave clear už na lvl 1 a jeden z nejoblíbenějších pro Normal/Hard; v Hell metě nefiguruje. Level jen pokud ho hraješ."},
+  ]},
+  {id:"e5",title:"Po splnění Hell minima: cesta k immortalům (mythik 15 + 6000 gemů)",goals:["hell"],steps:[
+    {k:"hailey",r:"mythic",lv:15,why:"Hailey 15 → Awakened Hailey, obvykle první immortal (ATK boost jako 285k zlata v MG1). Skvělá i v PvP a guild raidu."},
+    {k:"lance",r:"mythic",lv:15,why:"Lance 15 → Immortal Knight Lancelot, v tier listech 2026 na špičce. Mythický Lance sám nad 12 nic nepotřebuje, jde čistě o odemčení immortala."},
+    {k:"frog",r:"mythic",lv:15,why:"Frog 15 → Reaper Frog / Reaper Dian (nejsilnější DPS immortal, RNG)."},
+    {k:"roka",r:"mythic",lv:15,why:"Roka (2026, S-tier ranged fyzický DPS) → Captain Roka."},
+    {k:"mono",r:"mythic",lv:15,why:"Mono 15 → Devil Monopoly (S-tier 2026 support)."},
+    {k:"tao",r:"mythic",lv:15,why:"Tao 15: příjemné navýšení dmg, ale bez immortal formy. Až po immortalech, které hraješ."},
+  ]},
+  {id:"i1",title:"Immortalové (Immortal Stones, zlato 2× oproti mythikům)",goals:["hell"],steps:[
+    {k:"i_hailey",r:"immortal",lv:6,why:"1→6 = 115 kamenů + 46k zlata. Immortal na 6 je citelný skok, dělej hned po odemčení."},
+    {k:"i_frog",r:"immortal",lv:12,why:"Reaper Frog 12: curse lift 35 % → 50 % (Reaper Dian 1 z 6 Frogů místo 1 z 8)."},
+    {k:"i_roka",r:"immortal",lv:6,why:"Captain Roka 6, pokud Roku reálně hraješ."},
+    {k:"i_lance",r:"immortal",lv:6,why:"Knight Lancelot 6 po odemčení."},
+    {k:"i_bomba",r:"immortal",lv:6,why:"Primeval Bomba doporučeno lvl 6 (fyzický build)."},
+    {k:"i_ato",r:"immortal",lv:6,why:"Chrono Ato doporučeno lvl 6 (fyzický build)."},
+    {k:"i_grav",r:"immortal",lv:6,why:"Super Graviton doporučeno lvl 6; poklad Gravitonu 6+ zlevní summon."},
+    {k:"i_mono",r:"immortal",lv:6,why:"Devil Monopoly 6 po odemčení."},
   ]},
 ];
 
@@ -635,7 +657,7 @@ const KEY="ld-planner-v1";
 let S = {goal:"hard",build:"magic",lv:{}};
 try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.lv) S=s; }catch(e){}
 // example values on first open so the page shows what it does
-if(!Object.keys(S.lv).length){ S.lv={bandit:9,shock:9,electro:6,tree:6,eagle:6,hunter:6,wolf:4,hailey:6,kun:6,chu:6,lance:1,kitty:3,sb:3,mg:3,ls:2}; S.example=true; }
+if(!Object.keys(S.lv).length){ S.lv={bandit:12,shock:12,electro:12,tree:12,eagle:12,hunter:12,wolf:12,hailey:15,kun:6,chu:12,tao:12,kitty:12,lance:12,mono:12,indy:6,grav:12,frog:15,roka:15,i_hailey:3,i_frog:9,i_roka:1,sb:6,mg:6,ls:6}; S.goal="hell"; S.example=true; }
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 const $=s=>document.querySelector(s);
 const lvOf=k=>+(S.lv[k]||0);
@@ -648,6 +670,7 @@ function mkInput(k,label,rar){
   return d;
 }
 MYTHICS.forEach(([k,l])=>$("#in-mythic").append(mkInput(k,l,"mythic")));
+IMMORTALS.forEach(([k,l])=>$("#in-immortal").append(mkInput(k,l,"immortal")));
 BASE.forEach(([k,l,r])=>$("#in-base").append(mkInput(k,l,r)));
 ARTS.forEach(([k,l])=>$("#in-art").append(mkInput(k,l,"art")));
 document.querySelectorAll("#goal button").forEach(b=>b.addEventListener("click",()=>{S.goal=b.dataset.g;save();render();}));
@@ -659,19 +682,19 @@ function render(){
   document.querySelectorAll("#goal button").forEach(b=>b.classList.toggle("on",b.dataset.g===S.goal));
   document.querySelectorAll("#build button").forEach(b=>b.classList.toggle("on",b.dataset.b===S.build));
   const R=$("#roadmap");R.innerHTML="";
-  let stones=0,gold=0,dups=0,todo=0,done=0,nextFound=false,nextName="";
+  let stones=0,istones=0,gold=0,dups=0,todo=0,done=0,nextFound=false,nextName="";
   // dedupe: for a key, only the highest required level for chosen goal counts in totals; but steps shown per phase
   const seenTarget={};
   ROADMAP.filter(p=>p.goals.includes(S.goal)&&(!p.build||p.build===S.build)).forEach(p=>{
     const ph=document.createElement("div");ph.className="phase";ph.innerHTML=`<span class="eyebrow">${p.title}</span>`;R.append(ph);
     const list=document.createElement("div");list.className="steps";
     p.steps.forEach(st=>{
-      const cur=lvOf(st.k), name=(MYTHICS.find(m=>m[0]===st.k)||BASE.find(m=>m[0]===st.k)||ARTS.find(m=>m[0]===st.k))[1];
+      const cur=lvOf(st.k), name=(MYTHICS.find(m=>m[0]===st.k)||IMMORTALS.find(m=>m[0]===st.k)||BASE.find(m=>m[0]===st.k)||ARTS.find(m=>m[0]===st.k))[1];
       const isDone=cur>=st.lv; let cs=0,cg=0,cd=0;
       if(!isDone && st.r!=="art"){
         const from=Math.max(cur,seenTarget[st.k]||0,1);
         const [a,g]=costRange(st.r,from,st.lv);
-        if(st.r==="mythic"||st.r==="immortal"){cs=a;stones+=a;} else {cd=a;dups+=a;}
+        if(st.r==="mythic"){cs=a;stones+=a;} else if(st.r==="immortal"){cs=a;istones+=a;} else {cd=a;dups+=a;}
         cg=g;gold+=g;
       }
       if(!isDone) seenTarget[st.k]=Math.max(seenTarget[st.k]||0,st.lv);
@@ -679,7 +702,7 @@ function render(){
       const el=document.createElement("div");el.className="step"+(isDone?" done":"")+(!isDone&&!nextFound?" next":"");
       if(!isDone&&!nextFound){nextFound=true;nextName=`${name} ${st.lv}`;}
       const costHtml= isDone?`<span class="cost">hotovo</span>` : st.r==="art"?`<span class="cost">artefakt<br>klíče</span>` :
-        `<span class="cost">${cs?`<b>${fmt(cs)} kamenů</b>`:`<b>${fmt(cd)} dupl.</b>`}<i>${fmt(cg)} zlata</i></span>`;
+        `<span class="cost">${cs?`<b>${fmt(cs)} ${st.r==="immortal"?"imm. kamenů":"kamenů"}</b>`:`<b>${fmt(cd)} dupl.</b>`}<i>${fmt(cg)} zlata</i></span>`;
       el.innerHTML=`<span class="st">${isDone?"✓":st.lv}</span><div><div class="t">${name} → lvl ${st.lv} <span class="muted small">(máš ${cur})</span></div><div class="why">${st.why}</div></div>${costHtml}`;
       list.append(el);
     });
@@ -688,11 +711,12 @@ function render(){
   $("#tiles").innerHTML=`
     <div class="tile"><div class="eyebrow">Další krok</div><div class="v" style="font-family:'Fredoka',sans-serif;font-size:1.15rem">${nextName||"Vše splněno"}</div></div>
     <div class="tile stone"><div class="eyebrow">Mythic Stones do cíle</div><div class="v">${fmt(stones)}</div></div>
+    <div class="tile stone"><div class="eyebrow">Immortal Stones do cíle</div><div class="v">${fmt(istones)}</div></div>
     <div class="tile coin"><div class="eyebrow">Zlato do cíle</div><div class="v">${fmt(gold)}</div></div>
     <div class="tile"><div class="eyebrow">Duplikátů (ne-mythici)</div><div class="v">${fmt(dups)}</div></div>
     <div class="tile"><div class="eyebrow">Kroky</div><div class="v">${done} / ${done+todo}</div><div class="meter"><i style="width:${done+todo?Math.round(done/(done+todo)*100):0}%"></i></div></div>`;
   $("#nav-next").textContent = todo? `${todo}` : "✓";
-  if(S.example && !$("#example-note")){ const n=document.createElement("div");n.id="example-note";n.className="callout";n.style.marginBottom="1rem";n.textContent="Ukázkové hodnoty (typický účet po pár týdnech). Přepiš je svými levely, uloží se v prohlížeči.";$("#tiles").before(n);}
+  if(S.example && !$("#example-note")){ const n=document.createElement("div");n.id="example-note";n.className="callout";n.style.marginBottom="1rem";n.textContent="Předvyplněno podle screenshotů účtu ližbrk (září 2026); základní jednotky a Watt/Vayne/Ato/Bomba jsou odhad, uprav je. Změny se ukládají v prohlížeči.";$("#tiles").before(n);}
   if(!S.example && $("#example-note")) $("#example-note").remove();
 }
 
