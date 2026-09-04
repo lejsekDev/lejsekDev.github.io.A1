@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucky Defense Plánovač</title>
+<meta name="description" content="Plánovač levelování guardianů, kalkulačky a tahák pro Lucky Defense (Normal → Hard → Hell).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#eef1f5; --panel:#ffffff; --panel2:#f5f7fa; --line:#d5dbe4; --ink:#1b2230; --ink2:#5b6675; --ink3:#8a93a1;
+  --acc:#2f9e6a; --acc-ink:#ffffff; --acc-soft:#dcf3e7;
+  --coin:#c98a1c; --coin-soft:#fbefd2; --stone:#2f9e6a; --stone-soft:#dcf3e7;
+  --warn:#c9541c; --warn-soft:#fbe4d6; --ok:#2f9e6a;
+  --r-common:#7c8593; --r-rare:#3b82d6; --r-epic:#8b5cf6; --r-legendary:#d9a520; --r-mythic:#d8453a; --r-immortal:#1b2230;
+  --shadow:0 1px 2px rgba(20,30,50,.06),0 8px 24px -12px rgba(20,30,50,.18);
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131820; --panel:#1b222c; --panel2:#222b37; --line:#2f3947; --ink:#e8ecf2; --ink2:#aab3c0; --ink3:#77818f;
+    --acc:#3fbf85; --acc-ink:#0f1a14; --acc-soft:#1c3a2c;
+    --coin:#e2a83a; --coin-soft:#3a2e14; --stone:#3fbf85; --stone-soft:#1c3a2c;
+    --warn:#ef7a3d; --warn-soft:#3f2416; --ok:#3fbf85;
+    --r-common:#9aa3b0; --r-rare:#5c9df0; --r-epic:#a78bfa; --r-legendary:#f0c04a; --r-mythic:#f26055; --r-immortal:#e8ecf2;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131820; --panel:#1b222c; --panel2:#222b37; --line:#2f3947; --ink:#e8ecf2; --ink2:#aab3c0; --ink3:#77818f;
+  --acc:#3fbf85; --acc-ink:#0f1a14; --acc-soft:#1c3a2c;
+  --coin:#e2a83a; --coin-soft:#3a2e14; --stone:#3fbf85; --stone-soft:#1c3a2c;
+  --warn:#ef7a3d; --warn-soft:#3f2416; --ok:#3fbf85;
+  --r-common:#9aa3b0; --r-rare:#5c9df0; --r-epic:#a78bfa; --r-legendary:#f0c04a; --r-mythic:#f26055; --r-immortal:#e8ecf2;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15.5px;line-height:1.5}
+h1,h2,h3,h4{font-family:"Fredoka","Nunito",system-ui,sans-serif;text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:1.65rem;font-weight:700;letter-spacing:.01em}
+h2{font-size:1.35rem;font-weight:600;margin-bottom:.35rem}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:.4rem 0}
+a{color:var(--acc)}
+.mono,.num{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);font-weight:700}
+.muted{color:var(--ink2)}
+.small{font-size:.86rem}
+
+.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+.side{background:var(--panel);border-right:1px solid var(--line);padding:1.25rem 1rem;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:1rem}
+.brand{display:flex;flex-direction:column;gap:.25rem}
+.brand .badge{align-self:flex-start;background:var(--acc);color:var(--acc-ink);font-family:"Fredoka",sans-serif;font-weight:700;padding:.15rem .55rem;border-radius:999px;font-size:.78rem}
+nav{display:flex;flex-direction:column;gap:.2rem}
+nav button{all:unset;cursor:pointer;padding:.55rem .7rem;border-radius:8px;color:var(--ink2);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+nav button:hover{background:var(--panel2);color:var(--ink)}
+nav button.on{background:var(--acc-soft);color:var(--ink)}
+nav button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.side .foot{margin-top:auto;font-size:.78rem;color:var(--ink3)}
+main{padding:1.5rem 2rem 4rem;max-width:1180px;width:100%}
+section.view{display:none}
+section.view.on{display:block}
+.head{margin-bottom:1.2rem}
+.head p{max-width:68ch;color:var(--ink2)}
+
+.grid{display:grid;gap:1rem}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.panel.lift{box-shadow:var(--shadow)}
+.panel h3{margin-bottom:.5rem}
+
+label.f{display:flex;flex-direction:column;gap:.2rem;font-size:.85rem;color:var(--ink2);font-weight:700}
+input[type=number],select{font:inherit;font-family:"JetBrains Mono",monospace;font-size:.95rem;padding:.4rem .5rem;border:1px solid var(--line);border-radius:7px;background:var(--panel2);color:var(--ink);width:100%}
+input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.lvlgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.55rem .8rem}
+.lvl{display:grid;grid-template-columns:1fr 62px;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px dashed var(--line)}
+.lvl .n{font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:.4rem}
+.lvl input{text-align:center;padding:.3rem .2rem}
+.dot{width:.6rem;height:.6rem;border-radius:50%;display:inline-block;flex:none}
+.dot.common{background:var(--r-common)}.dot.rare{background:var(--r-rare)}.dot.epic{background:var(--r-epic)}.dot.legendary{background:var(--r-legendary)}.dot.mythic{background:var(--r-mythic)}.dot.immortal{background:var(--r-immortal);outline:2px solid var(--r-legendary);outline-offset:-2px}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:.4rem .8rem;font-weight:700;color:var(--ink2);font-size:.9rem}
+.seg button.on{background:var(--acc);color:var(--acc-ink)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.btn{font:inherit;font-weight:700;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:.45rem .9rem;border-radius:8px}
+.btn.primary{background:var(--acc);color:var(--acc-ink);border-color:transparent}
+.btn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.toolbar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:.6rem 0 1rem}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.7rem;margin-bottom:1rem}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:.7rem .9rem}
+.tile .v{font-family:"JetBrains Mono",monospace;font-size:1.35rem;font-weight:600;font-variant-numeric:tabular-nums}
+.tile.stone .v{color:var(--stone)}.tile.coin .v{color:var(--coin)}
+
+.steps{display:flex;flex-direction:column;gap:.5rem}
+.step{display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:.7rem .9rem}
+.step.done{opacity:.55}
+.step.next{border-color:var(--acc);box-shadow:var(--shadow)}
+.step .st{width:1.7rem;height:1.7rem;border-radius:50%;display:grid;place-items:center;font-family:"Fredoka",sans-serif;font-weight:700;font-size:.85rem;border:2px solid var(--line);color:var(--ink2)}
+.step.done .st{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.step.next .st{border-color:var(--acc);color:var(--acc)}
+.step .t{font-weight:700}
+.step .why{color:var(--ink2);font-size:.88rem;margin-top:.15rem;max-width:70ch}
+.step .cost{text-align:right;font-family:"JetBrains Mono",monospace;font-size:.85rem;white-space:nowrap;color:var(--ink2)}
+.step .cost b{display:block;color:var(--stone);font-weight:600}
+.step .cost i{display:block;font-style:normal;color:var(--coin)}
+.phase{margin:1.3rem 0 .5rem;display:flex;align-items:baseline;gap:.6rem}
+.phase .eyebrow{color:var(--acc)}
+.pill{display:inline-block;padding:.1rem .5rem;border-radius:999px;font-size:.74rem;font-weight:700;letter-spacing:.03em;border:1px solid var(--line);color:var(--ink2);background:var(--panel2)}
+.pill.mag{border-color:#6d8ff5;color:#4d6fe0}.pill.fyz{border-color:#e0894d;color:#c9611c}
+.pill.S{background:var(--r-mythic);color:#fff;border-color:transparent}.pill.A{background:var(--r-legendary);color:#1b2230;border-color:transparent}.pill.B{background:var(--r-rare);color:#fff;border-color:transparent}.pill.C,.pill.D,.pill.F{background:var(--r-common);color:#fff;border-color:transparent}
+
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:.4rem .55rem;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+td.num,th.num{text-align:right;font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+tr.hl td{background:var(--acc-soft)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:.9rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:.9rem 1rem;display:flex;flex-direction:column;gap:.45rem}
+.card .top{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.card h3{font-size:1.1rem}
+.card .tags{display:flex;flex-wrap:wrap;gap:.3rem}
+.card .rec{font-size:.86rem;background:var(--panel2);border-radius:7px;padding:.4rem .55rem}
+.card .rec b{color:var(--ink2);font-weight:700;font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:.15rem}
+.card ul{margin:.2rem 0 0;padding-left:1.1rem;font-size:.88rem}
+.card li{margin:.15rem 0}
+.rc{font-weight:700}
+.rc.common{color:var(--r-common)}.rc.rare{color:var(--r-rare)}.rc.epic{color:var(--r-epic)}.rc.legendary{color:var(--r-legendary)}.rc.mythic{color:var(--r-mythic)}
+
+.check{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.35rem}
+.check li{display:grid;grid-template-columns:auto 1fr;gap:.5rem;align-items:start;font-size:.92rem}
+.check li::before{content:"";width:.9rem;height:.9rem;border:2px solid var(--acc);border-radius:4px;margin-top:.25rem}
+.callout{border-left:4px solid var(--coin);background:var(--coin-soft);padding:.6rem .8rem;border-radius:0 8px 8px 0;font-size:.9rem}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.ok{border-color:var(--acc);background:var(--acc-soft)}
+.out{font-family:"JetBrains Mono",monospace;font-size:1rem;margin-top:.5rem}
+.out b{color:var(--stone);font-weight:600}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.25rem .8rem;font-size:.9rem}
+.kv dt{color:var(--ink2);font-weight:700}.kv dd{margin:0;font-family:"JetBrains Mono",monospace}
+.meter{height:.6rem;background:var(--panel2);border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-top:.4rem}
+.meter i{display:block;height:100%;background:var(--acc)}
+.legend-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.6rem}
+.legend-map div{background:var(--panel2);border-radius:8px;padding:.55rem .7rem;font-size:.9rem}
+.legend-map div b{display:block;color:var(--r-legendary);font-family:"Fredoka",sans-serif;font-size:1rem}
+details{border:1px solid var(--line);border-radius:8px;padding:.5rem .8rem;background:var(--panel)}
+details summary{cursor:pointer;font-weight:700}
+details+details{margin-top:.5rem}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  nav{flex-direction:row;flex-wrap:wrap}
+  nav button{padding:.4rem .6rem;font-size:.9rem}
+  .side .foot{display:none}
+  main{padding:1rem 1rem 3rem}
+  .step{grid-template-columns:auto 1fr}
+  .step .cost{grid-column:2;text-align:left}
+  .step .cost b,.step .cost i{display:inline;margin-right:.6rem}
+}
+@media (prefers-reduced-motion:no-preference){ .step,.card{transition:border-color .15s,box-shadow .15s} }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <span class="badge">Lucky Defense</span>
+      <h1>Plánovač</h1>
+      <span class="small muted">Levelování · kalkulačky · tahák</span>
+    </div>
+    <nav id="nav">
+      <button data-v="plan" class="on">Co levelovat <span class="mono small" id="nav-next"></span></button>
+      <button data-v="calc">Kalkulačky</button>
+      <button data-v="units">Mythici a recepty</button>
+      <button data-v="match">Tahák do zápasu</button>
+      <button data-v="src">Zdroje</button>
+    </nav>
+    <div class="foot">Data: komunitní příručka LuckyDefenseGuides (stav 11/2025) + tier listy 2026. Tvoje levely se ukládají jen v tomto prohlížeči.</div>
+  </aside>
+
+  <main>
+  <!-- ================= PLÁNOVAČ ================= -->
+  <section class="view on" id="v-plan">
+    <div class="head">
+      <div class="eyebrow">Krok 1</div>
+      <h2>Zadej, co máš, a dostaneš pořadí, co levelovat dál</h2>
+      <p>Pořadí vychází z ověřené komunitní cesty „nejrychleji ke konzistentnímu Hard“ a dál k Hell. Zadej aktuální levely guardianů (0 = nemám odemčeno) a úroveň artefaktů. Náklady se dopočítají z oficiálních tabulek.</p>
+    </div>
+
+    <div class="toolbar">
+      <span class="eyebrow">Cíl</span>
+      <div class="seg" id="goal">
+        <button data-g="normal">Normal</button>
+        <button data-g="hard" class="on">Hard</button>
+        <button data-g="hell">Hell</button>
+      </div>
+      <span class="eyebrow" style="margin-left:.6rem">Build pro Hell</span>
+      <div class="seg" id="build">
+        <button data-b="magic" class="on">Magický</button>
+        <button data-b="phys">Fyzický</button>
+      </div>
+      <button class="btn" id="reset" style="margin-left:auto">Vymazat vše</button>
+    </div>
+
+    <div class="grid g2" style="margin-bottom:1rem">
+      <div class="panel">
+        <h3>Mythici <span class="muted small">(úroveň 0–15)</span></h3>
+        <div class="lvlgrid" id="in-mythic"></div>
+      </div>
+      <div>
+        <div class="panel" style="margin-bottom:1rem">
+          <h3>Základní jednotky</h3>
+          <div class="lvlgrid" id="in-base"></div>
+        </div>
+        <div class="panel">
+          <h3>Artefakty</h3>
+          <div class="lvlgrid" id="in-art"></div>
+          <p class="small muted" style="margin-top:.5rem">sb/mg = Safe Box / Money Gun. Hard doporučeno od 3/3, Hell minimum 5/5, pohodlně 6/6.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tiles" id="tiles"></div>
+    <div id="roadmap"></div>
+  </section>
+
+  <!-- ================= KALKULAČKY ================= -->
+  <section class="view" id="v-calc">
+    <div class="head">
+      <div class="eyebrow">Nástroje</div>
+      <h2>Kalkulačky</h2>
+      <p>Náklady na levelování, in-game upgrade mythic damage, defense reduction a cíle zlata pro Money Gun.</p>
+    </div>
+    <div class="grid g2">
+      <div class="panel lift">
+        <h3>Cena levelování guardiana</h3>
+        <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:.6rem">
+          <label class="f">Rarita<select id="c-rar">
+            <option value="mythic">Mythic</option><option value="immortal">Immortal</option><option value="legendary">Legendary</option><option value="epic">Epic</option><option value="rare">Rare</option><option value="common">Common</option></select></label>
+          <label class="f">Z úrovně<input type="number" id="c-from" min="1" max="14" value="1"></label>
+          <label class="f">Na úroveň<input type="number" id="c-to" min="2" max="15" value="12"></label>
+        </div>
+        <div class="out" id="c-out"></div>
+        <p class="small muted">Mythic/Immortal se levelují kameny (Mythic Stones / Immortal Stones), nižší rarity duplikáty. Zlomové levely: 6 (nový skill u Epic+), 9 (+10 % ATK SPD), 10 (odemkne exkluzivní poklad), 12 (další skill / zesílení), 15 (odemkne immortal formu za 6000 gemů).</p>
+        <div class="tw"><table id="c-table"></table></div>
+      </div>
+
+      <div class="panel lift">
+        <h3>Mythic damage upgrade (v zápase)</h3>
+        <label class="f">Počet upgradů (max 31)<input type="number" id="m-n" min="0" max="31" value="8"></label>
+        <div class="out" id="m-out"></div>
+        <p class="small muted">Každý upgrade dává +50 % (násobitel 1 + 0,5 × n). První stojí 2 luck stones a každý další o 1 víc. Násobí se s Money Gun a stackuje se na všechno ostatní.</p>
+        <div class="tw"><table>
+          <tr><th>Upgradů</th><th class="num">Násobek dmg</th><th class="num">Celkem stones</th></tr>
+          <tr><td>2</td><td class="num">2×</td><td class="num">5</td></tr>
+          <tr><td>4</td><td class="num">3×</td><td class="num">14</td></tr>
+          <tr><td>8</td><td class="num">5×</td><td class="num">44</td></tr>
+          <tr><td>10 (cíl Hell před W70)</td><td class="num">6×</td><td class="num">65</td></tr>
+          <tr><td>14 (cíl Hell W80)</td><td class="num">8×</td><td class="num">119</td></tr>
+          <tr><td>16</td><td class="num">9×</td><td class="num">152</td></tr>
+          <tr><td>31 (max)</td><td class="num">16,5×</td><td class="num">527</td></tr>
+        </table></div>
+      </div>
+
+      <div class="panel lift">
+        <h3>Defense reduction (DR) na desce</h3>
+        <p class="small muted">Jen pro fyzické DPS (Chu, Bat Man, Vayne, Bomba, Tar, Verdee, Blob, Reaper Frog). Magičtí (Lance, Tao, Hailey, Kun, Dian, Dragon, Meow) DR nepotřebují.</p>
+        <div class="lvlgrid">
+          <label class="f">Monopoly Man ×<input type="number" id="d-mono" min="0" value="2"></label>
+          <label class="f">Hunter lvl 12+ ×<input type="number" id="d-h12" min="0" value="3"></label>
+          <label class="f">Hunter pod 12 ×<input type="number" id="d-h" min="0" value="0"></label>
+          <label class="f">Electro Robot ×<input type="number" id="d-el" min="0" value="3"></label>
+          <label class="f">Demon Soldier ×<input type="number" id="d-dem" min="0" value="0"></label>
+          <label class="f">Orc Shaman ×<input type="number" id="d-orc" min="0" value="0"></label>
+          <label class="f">Indy „Old Shield“ (DR)<input type="number" id="d-indy" min="0" value="0"></label>
+          <label class="f">Pet (Helmster/Dandan)<input type="number" id="d-pet" min="0" value="0"></label>
+        </div>
+        <div class="out" id="d-out"></div>
+        <div class="meter"><i id="d-bar" style="width:0"></i></div>
+        <p class="small muted">Cíle do W80: Normal 160 · Hard 180–200 · Hell 200–220. Nad ~200 už přínos klesá. Chrono Ato zvyšuje veškerou DR o 50 %.</p>
+      </div>
+
+      <div class="panel lift">
+        <h3>Zlato pro Money Gun</h3>
+        <label class="f">Zlato v pokladně<input type="number" id="g-gold" min="0" step="1000" value="100000"></label>
+        <div class="out" id="g-out"></div>
+        <p class="small muted">Money Gun: +0,91 % ATK za každou drženou minci (100k = +910 %). Nejvyšší damage buff ve hře, proto se šetří.</p>
+        <div class="tw"><table>
+          <tr><th>Vlna</th><th class="num">Hard (cíl 300k+ na W80)</th><th class="num">Hell sb5 / sb6+</th></tr>
+          <tr><td>W40</td><td class="num">30 000</td><td class="num">40 000</td></tr>
+          <tr><td>W45</td><td class="num">40 000</td><td class="num">—</td></tr>
+          <tr><td>W50</td><td class="num">55 000</td><td class="num">60–80k (než začneš utrácet)</td></tr>
+          <tr><td>W60</td><td class="num">95 000</td><td class="num">—</td></tr>
+          <tr><td>W70</td><td class="num">170 000</td><td class="num">200 000</td></tr>
+          <tr><td>W80</td><td class="num">300 000</td><td class="num">400–500k / 700–800k</td></tr>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MYTHICI ================= -->
+  <section class="view" id="v-units">
+    <div class="head">
+      <div class="eyebrow">Databáze</div>
+      <h2>Mythici, recepty a kdy je levelovat</h2>
+      <p>Role, typ damage, potřebná legendárka, recept a zlomové levely. Tier je kombinace komunitního hodnocení pro vyšší obtížnosti (Hard/Hell) a tier listů z roku 2026. Kde recept neznám s jistotou, je to napsané. Ověř ho v záložce Recipe ve hře.</p>
+    </div>
+    <div class="panel" style="margin-bottom:1rem">
+      <h3>Legendárka → co z ní udělat</h3>
+      <div class="legend-map">
+        <div><b>Sheriff</b>Hailey 6 (start) · Lancelot 6→12 (boss killer) · Indy 12 (Hell support). Na W50 v Hard se Sheriff vybírá nejčastěji (75 % šance, že se nabídne).</div>
+        <div><b>War Machine</b>Rocket Chu (vždy). Alternativa Iron Meow (War Machine + 2× Bandit), magický, nevybuchuje.</div>
+        <div><b>Storm Giant</b>Lazy Taoist 12 (top magický wave clear) · Watt 12 (boss killer na W70/W80) · Coldy (jen sólo stun-hraní).</div>
+        <div><b>Tiger Master</b>Master Kun 6 (levný, brzký DPS) · Bomba 12 (Hell fyzický wave clear, cesta k Primeval Bomba).</div>
+      </div>
+      <p class="small muted" style="margin-top:.6rem">Epic roulette dá legendárku levněji než legendary roulette (3 epiky → merge). Jen 4 legendárky existují a každá vede na mythika, který Normal skoro sólo utáhne.</p>
+    </div>
+    <div class="toolbar">
+      <span class="eyebrow">Filtr</span>
+      <div class="seg" id="ufilter">
+        <button data-f="all" class="on">Vše</button>
+        <button data-f="core">Jádro (unlock order)</button>
+        <button data-f="dps">Wave clear</button>
+        <button data-f="boss">Boss killer</button>
+        <button data-f="sup">Support / stun</button>
+      </div>
+    </div>
+    <div class="cards" id="cards"></div>
+
+    <div class="panel" style="margin-top:1.2rem">
+      <h3>Immortal formy (odemknutí: mythik na lvl 15 + 6000 gemů)</h3>
+      <div class="tw"><table>
+        <tr><th>Immortal</th><th>Z mythika</th><th>Podmínka v zápase</th><th>Role / poznámka</th></tr>
+        <tr><td>Awakened Hailey</td><td>Hailey</td><td>15 % šance při každém ultu s 10/10 Star Power (Kitty zrychluje)</td><td>Magický DPS, obří ATK boost. Obvykle první immortal. Skvělá i v PvP a guild raidu.</td></tr>
+        <tr><td>Reaper Frog / Reaper Dian</td><td>Frog Prince</td><td>Z King Diana → Reaper Frog, curse lift 35 % (50 % na lvl 12) → Reaper Dian</td><td>Reaper Dian = nejsilnější DPS immortal. Reaper Frog sám o sobě utáhne Hell do W40. Nepodceňuj RNG.</td></tr>
+        <tr><td>Grand Mama</td><td>Mama</td><td>9+ impů od Mamy</td><td>Support: +dmg celé desky, oživuje mythiky. Reálně jen s exkluzivním pokladem Mamy.</td></tr>
+        <tr><td>Primeval Bomba</td><td>Bomba</td><td>Max Workout stacky, pak 0,1 % za základní útok (stackuj ATK SPD)</td><td>Top fyzický wave clear, cooldown ult ignoruje část DEF. Doporučeno lvl 6.</td></tr>
+        <tr><td>Chrono Ato</td><td>Ato</td><td>Ato snížil cooldowny spojenců o 100 s celkem</td><td>Nejlepší support fyzické desky: +50 % efekt DR, +fyz. dmg, zkracuje cooldowny.</td></tr>
+        <tr><td>Top Vayne</td><td>Vayne</td><td>Vayne použije ult 12×</td><td>Fyzický single-target boss killer. Synergie s Ato (a naopak).</td></tr>
+        <tr><td>Super Graviton</td><td>Graviton</td><td>Overheat 100 pohlcením 3–7 Gravitonů (poklad snižuje na 2–3)</td><td>Crowd control + slow + sání; kombinuj s 1–2 mythic Gravitony.</td></tr>
+        <tr><td>Dark Lord Dragon</td><td>Dragon + Drain</td><td>Mít na desce 1 Drain a 1 Dragon (vejce z Eagle Generalů)</td><td>Magický wave clear, poměrně konzistentní, když máš brzo Eagly.</td></tr>
+        <tr><td>Ghost Ninja</td><td>Ninja</td><td>Obětovat Ninju s 11-combem Assassinate + 4 další Ninji</td><td>Fyzický, bez legendárky, ale spíš baterka pro Chrono Ato.</td></tr>
+        <tr><td>Doctor Pulse</td><td>Pulse Generator</td><td>Nabít 10 000 energie</td><td>Magický, bez legendárky, žere tvoje stun roboty. Slabší.</td></tr>
+        <tr><td>Evergreen Verdee</td><td>Verdee</td><td>Verdee vyvolá 28 Treeee z ultu, pak obětuje 3 epické Tree</td><td>Fyzický DPS (2026).</td></tr>
+        <tr><td>Immortal Knight Lancelot · Devil Monopoly · Sage Kun · Blob Squad</td><td>Lancelot · Mono · Kun · Blob</td><td>Nové v roce 2026 (podmínky ověř ve hře)</td><td>Knight Lancelot a Devil Monopoly jsou v tier listech 2026 na špičce S-tieru.</td></tr>
+      </table></div>
+      <p class="small muted">Immortal se leveluje zvlášť (Immortal Stones z God módu, guild shopu, PvP shopu, obchodu za gemy a eventů). Lvl 1→6 = 115 kamenů + 46k zlata; stojí za to hned po odemčení. Immortalové jsou imunní na Night Shamana.</p>
+    </div>
+  </section>
+
+  <!-- ================= TAHÁK ================= -->
+  <section class="view" id="v-match">
+    <div class="head">
+      <div class="eyebrow">V zápase</div>
+      <h2>Tahák do zápasu</h2>
+      <p>Co dělat v jakou vlnu. Platí obecné pravidlo: 1 DPS s dobrým stunem porazí 5 DPS bez stunu, a zlato v pokladně je největší damage buff ve hře.</p>
+    </div>
+    <div class="toolbar">
+      <div class="seg" id="mfilter">
+        <button data-m="normal" class="on">Normal</button>
+        <button data-m="hard">Hard</button>
+        <button data-m="hell">Hell</button>
+      </div>
+    </div>
+
+    <div id="m-normal" class="mode">
+      <div class="grid g2">
+        <div class="panel"><h3>Start (W1–10): nasbírej luck stones</h3>
+          <ul class="check">
+            <li>Potřebuješ artefakty Luck Stone, Safe Box a Money Gun aspoň lvl 1.</li>
+            <li>Splň mise: sesbírej všechny commony, prodej guardiany, upgraduj 2× (Blacksmith: 1× common dmg + 1× epic dmg, je to v plusu), zabij monstra.</li>
+            <li>Bandity nemerguj (dělají mince). Pokud nemáš Bandit 6, klidně je merguj a prodej.</li>
+            <li>Vše hoď do Epic Roulette. 14 stones ≈ 3–4 epiky. Ty zabijí Golemy (hunt) před W10 = další stones a mince.</li>
+            <li>Neutrácej zlato za summony, ušetři 1000 mincí na misi.</li>
+          </ul></div>
+        <div class="panel"><h3>Rush DPS mythika</h3>
+          <ul class="check">
+            <li>Epic roulette → merge 3 epiků → legendárka. Každá legendárka = mythik, co Normal skoro sólo utáhne.</li>
+            <li>War Machine → Rocket Chu (Overclock 35 %, na lvl 6 50 %). Sheriff → Hailey. Tiger → Kun. Storm Giant → Tao (slabý pod lvl 12).</li>
+            <li>Chu: overclockuj během boss vln do W40 (i exploze udělá dmg). Po W40 overclockuj hned.</li>
+            <li>Hailey: Star Power roste summonováním za zlato. Odkládej co nejdéle, ať Safe Box roste.</li>
+          </ul></div>
+        <div class="panel"><h3>Stun setup (nejvíc podceňované)</h3>
+          <ul class="check">
+            <li>1 stack (3×) Electro Robot + 2 stacky (6×) Shock Robot na hráče, zrcadlově s parťákem.</li>
+            <li>Stunnery nikdy dopředu. Stun drží mob v dosahu AOE tvého DPS.</li>
+            <li>Chybí stuny? Rare roulette, dokud nepadnou modří roboti.</li>
+          </ul></div>
+        <div class="panel"><h3>Škálování do W80</h3>
+          <ul class="check">
+            <li>Neutrácej zlato, pokud nemusíš. Safe Box na pozdních vlnách dělá 1–5k za vlnu.</li>
+            <li>Fyzičtí DPS: DR 160 do W80 (Mono 20, Hunter 10/15, Electro 5, Demon 5/7,5).</li>
+            <li>Mythic damage upgrade průběžně; ke konci maxni summon level, spamuj summony, prodávej za stones a upgraduj dál.</li>
+            <li>Bonusové mythiky pro konzistenci: Hailey 6 → Kun 6 → Chu 6.</li>
+          </ul></div>
+      </div>
+    </div>
+
+    <div id="m-hard" class="mode" hidden>
+      <div class="callout warn" style="margin-bottom:1rem">Minimum do Hard: sb/mg 3/3, Bandit 12, Shock Robot 12, ostatní ne-mythici 9+, hlavní mythici lvl 6, v týmu aspoň jedna Kitty Mage 12 (nebo Frog 12). Hard má Dungeon (5 bossů, limit 16 minut, končí ~W42–44).</div>
+      <div class="grid g2">
+        <div class="panel"><h3>W1–20: ekonomika a epiky</h3>
+          <ul class="check">
+            <li>Summonuj Bandity do 6 kusů; stop na 80-cost (konzervativně 60), pokud nemáš míň než 3.</li>
+            <li>Bandity pošli do Dungeonu (útočí non-stop = víc Loot). Penguin/Tiger tam zrychlí jejich ATK SPD.</li>
+            <li>Mise: Blacksmith (1× common + 1× epic dmg), všechny commony, prodej 5 guardianů (ne stun roboty!), Golem do W10, 10 luck stones (neutrácej stones do zabití W10 bossů), 1000 mincí.</li>
+            <li>Epic roulette na epiky a stuny. Nemerguj Electro/Shock, pokud ti nezůstane aspoň 3+3.</li>
+            <li>Do W20 potřebuješ 1–2 DPS mythiky (Hailey 6 / Chu 6 / Tao 12 / Kun 6): W20 boss epiky neudělají.</li>
+          </ul></div>
+        <div class="panel"><h3>W21–42: Dungeon + supporty</h3>
+          <ul class="check">
+            <li>Jeden DPS do Dungeonu (na volné místo vedle Banditů), druhý drží hlavní desku. Pár levelů mythic dmg často stačí, aby jeden DPS Dungeon zvládl.</li>
+            <li>Pak stav supporty: Mono + Kitty (stones, MP regen), Eagle (ATK SPD), DR na 180–200 do W80.</li>
+            <li>Bez DPS mythika do W25 = maxni summon level a pal zlato, dokud nepadne legendárka.</li>
+            <li>Varovné signály: boss zabit s &lt;20 s do konce, 60+ mobů dlouhodobě, spolehnutí jen na neoverclocknutého Chu / Froga.</li>
+          </ul></div>
+        <div class="panel"><h3>W43–80: rozhodnutí na W50</h3>
+          <ul class="check">
+            <li>Škálování: do W60 ~1,5 bil. dmg, do W70 ~4,5 bil., do W80 ~13 bil. Většina je v bossech.</li>
+            <li>Málo zlata (pod 30k na W40)? Vyber na W50 Sheriff → Lance. Lance 6: 3 Lanci + 4+ Kitty; Lance 12: 2 Lanci stačí. Flame pasivku vymaxuj luck stones (10 upgradů po 2).</li>
+            <li>Máš Awakened Hailey? Po 50k zlata maxni summon a dotáhni Star Power 10/10; 3 Kitty vedle ní.</li>
+            <li>Dost zlata? W50 → další DPS dle potřeby. Cíl 5–6 DPS v týmu, pak mythic dmg a supporty.</li>
+            <li>Indy 6+ s hodně Sheriffy: ult hledá poklad (luck stone/vlna, ATK SPD, DR).</li>
+          </ul></div>
+        <div class="panel"><h3>Stun a DR</h3>
+          <ul class="check">
+            <li>3× Electro + 6× Shock na každé straně, zrcadlově. Level 12 Graviton = 4,5 s stun, 13 % šance (1 mythik ≈ 1 stack).</li>
+            <li>Stun v Hard je -50 % trvání oproti Normalu, proto víc jednotek.</li>
+            <li>Fyzičtí DPS: DR 180 minimum, 200 ideál do W80.</li>
+          </ul></div>
+      </div>
+    </div>
+
+    <div id="m-hell" class="mode" hidden>
+      <div class="callout warn" style="margin-bottom:1rem">Minimum do Hell: Lance 12, sb/mg 5/5 (ideál 6/6), epiky 12+ (ideál 15), celá stun sestava. Bez Dungeonu (jen 18 polí), speciální bossové na W30/W60/W80, potřebná dmg 10× Hard (~130 bil.).</div>
+      <div class="grid g2">
+        <div class="panel"><h3>W1–20</h3>
+          <ul class="check">
+            <li>Nová mise Flashback: nech mobů narůst na 90–97 (nad 99 = mise) a teprve pak spamuj summony.</li>
+            <li>Golem hunt do W8: „pravidlo 4 epiků“. Za každý chybějící epik +1 upgrade epic dmg.</li>
+            <li>Nikdy neupgraduj common/rare dmg. Šetři zlato: 60k před tím, než začneš utrácet.</li>
+            <li>Bandity pozicuj tak, aby DPS nezabíjeli moby dřív, než k nim dojdou. Penguin lvl 1 stačí.</li>
+            <li>Do W30 bosse MUSÍŠ mít DPS mythika. Epiky drží max do W29.</li>
+          </ul></div>
+        <div class="panel"><h3>W21–55: speciální bossové</h3>
+          <ul class="check">
+            <li>Vypni 2× rychlost před W30/W60/W80.</li>
+            <li>Night Shaman mutuje jednotky (immortalové imunní) – prohoď dva nejdůležitější mythiky ~1 s po spawnu.</li>
+            <li>Reaper / Magician: červené kruhy zabíjejí jednotky (i immortaly) – odsuň je, plánuj oběti.</li>
+            <li>Barrier: štít 10× HP, imunní na % dmg (Lance). Řešení: Watt, Vayne, čistý wave clear.</li>
+            <li>Kitty Sorcerer (-mag. dmg), Grunt (-fyz. dmg), Coldest (-ATK SPD 20 vln), Worm (-MP regen), Doctor (blind).</li>
+            <li>40k zlata na W40 je OK; utrácet začni až kolem W46+ (60–80k), plně připravený na W60.</li>
+          </ul></div>
+        <div class="panel"><h3>W56–80: finální deska</h3>
+          <ul class="check">
+            <li>Do W70: 2–3 boss killery, 2+ wave cleary, Hailey (ideál Awakened), 2–3 Kitty (4+ s Lance), Watt 200+ stacků, 200k zlata, mythic dmg 10+.</li>
+            <li>W80: mythic dmg 14+, zlato 400–500k (sb5) / 700–800k (sb6+). 4 DPS minimum, z toho 2 boss killery.</li>
+            <li>Watt: nech nabíjet (250+) a pop na finálního bosse. Lance Flame vymaxovaný. Hailey 10/10 Star Power.</li>
+            <li>ATK SPD +30–50 % + Penguin; magický build stropuje na 200 %.</li>
+            <li>Bandity merguj nejpozději W70, pak doplň supporty.</li>
+          </ul></div>
+        <div class="panel"><h3>Dva meta buildy (sb6)</h3>
+          <p class="small"><b>Magický (snazší):</b> Tao 12/15, Watt 12, Kun 6, Kitty 12, Lance 12, Frog libovolně. Volitelně Dian 12, Drain 12, Meow V2, Indy 12, Mono 12. Support = ATK SPD (Eagle, Frog, Indy Quick Sword), pak MP regen. Jde hrát i bez Kitty (Tao + Watt).</p>
+          <p class="small"><b>Fyzický (vyšší strop):</b> Vayne 15, Chu 12, Lance 12, Kitty 12, Tao 12. Volitelně Frog 15, Indy 12, Orc Shaman 10/12 s pokladem. 2 Lanci + 2–4 Vayne (3 Kitty drží Vayne skoro trvale v ultu = 4× dmg). DR 200–220, Indy Old Shield to řeší. ~400k zlata.</p>
+          <p class="small muted">Na W50 legendárka podle potřeby: Sheriff → Awakened Hailey / Lance 12 (2–3×) / Indy 12 · Storm Giant → Tao (až 6×) / Watt (do W51) / Vayne · War Machine → Chu · Tiger → Primeval Bomba / Bomba 12.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ZDROJE ================= -->
+  <section class="view" id="v-src">
+    <div class="head">
+      <div class="eyebrow">Odkud to je</div>
+      <h2>Zdroje a jak s nástrojem pracovat</h2>
+    </div>
+    <div class="grid g2">
+      <div class="panel">
+        <h3>Použité zdroje</h3>
+        <ul class="small">
+          <li><a href="https://www.luckydefenseguides.com/" target="_blank" rel="noopener">LuckyDefenseGuides.com</a> (GhidWard) – unlock order, Normal/Hard/Hell průvodce, tabulky nákladů, immortalové, poklady, stun a DR guide. Zdrojový kód webu je na GitHubu (ghidbase/lucky-defense-guides), poslední úprava listopad 2025.</li>
+          <li><a href="https://luckydefense.net/category/guide/" target="_blank" rel="noopener">luckydefense.net</a> – priority levelování (Bandit/Shock Robot 6 → epiky → mythici), Hard tipy po 100+ clearech.</li>
+          <li><a href="https://gamestouse.com/tier-list/lucky-defense-tier-list/" target="_blank" rel="noopener">gamestouse.com</a> tier list (srpen 2026) a <a href="https://luckydefensetierlist.com/" target="_blank" rel="noopener">luckydefensetierlist.com</a> – aktuální S/A tier včetně nových jednotek (Roka, Verdee, Tar, Knight Lancelot, Devil Monopoly).</li>
+          <li><a href="https://grindnstrat.com/lucky-defense-mythic-tier-list/" target="_blank" rel="noopener">grindnstrat.com</a> – mythic tier list, farmení Mythic Stones (10× recruit po dosažení lvl 6, gemy do staminy, ne do kamenů).</li>
+          <li><a href="https://www.pocketgamer.com/lucky-defense-omfg/tier-list/" target="_blank" rel="noopener">Pocket Gamer</a> – tier list a základní tipy.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Jak to používat</h3>
+        <ul class="small">
+          <li>Na kartě <b>Co levelovat</b> vyplň levely; stránka si je pamatuje v prohlížeči. Zvýrazněný krok je ten další.</li>
+          <li>Mythic Stones: hlavní zdroj jsou recruity (duplicitní mythik = 30 shardů z 1×, 300 z 10×). Jakmile máš mythika na 6 přes 1× tahy, dělej 10× tahy. Gemy dávej do staminy, ne do kamenů v obchodě.</li>
+          <li>Zlato na levelování: Hard/Hell first-clear odměny a Discord kanál „first-clear-help“ komunitního serveru.</li>
+          <li>Poklady (treasures) se odemykají od mythik lvl 10; upgrade 1→6 stojí 5–25k mincí s klesající šancí (90 % → 50 %).</li>
+          <li>Data ověřuj proti hře, hra se mění (např. nerfy Hell na začátku 2025, nové jednotky 2026).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  </main>
+</div>
+
+<script>
+// ---------- DATA ----------
+const COST = {
+  mythic:   {2:[5,1000],3:[10,2000],4:[20,4000],5:[30,6000],6:[50,10000],7:[70,14000],8:[100,20000],9:[130,26000],10:[170,34000],11:[210,42000],12:[260,52000],13:[310,62000],14:[360,72000],15:[430,86000]},
+  immortal: {2:[5,2000],3:[10,4000],4:[20,8000],5:[30,12000],6:[50,20000],7:[70,28000],8:[100,40000],9:[130,52000],10:[170,68000],11:[210,84000],12:[260,104000],13:[310,124000],14:[360,144000],15:[430,172000]},
+  legendary:{2:[2,1000],3:[3,2000],4:[4,4000],5:[10,6000],6:[15,10000],7:[20,14000],8:[30,20000],9:[40,26000],10:[50,34000],11:[65,42000],12:[80,52000],13:[95,62000],14:[110,72000],15:[130,86000]},
+  epic:     {2:[3,1000],3:[4,2000],4:[8,4000],5:[12,6000],6:[20,10000],7:[30,14000],8:[40,20000],9:[50,26000],10:[70,34000],11:[85,42000],12:[105,52000],13:[125,62000],14:[145,72000],15:[170,86000]},
+  rare:     {2:[3,1000],3:[6,2000],4:[10,3000],5:[20,5000],6:[30,8000],7:[40,12000],8:[60,17000],9:[80,22000],10:[100,28000],11:[130,35000],12:[160,43000],13:[190,52000],14:[220,60000],15:[260,72000]},
+  common:   {2:[5,500],3:[10,1000],4:[20,2000],5:[30,3000],6:[50,5000],7:[70,7000],8:[100,10000],9:[130,13000],10:[170,17000],11:[210,21000],12:[260,26000],13:[310,31000],14:[360,36000],15:[430,43000]},
+};
+const UNIT_LABEL = {mythic:"Mythic Stones",immortal:"Immortal Stones",legendary:"duplikátů",epic:"duplikátů",rare:"duplikátů",common:"duplikátů"};
+function costRange(rar, from, to){ let a=0,g=0; for(let l=Math.max(from,1)+1;l<=to;l++){ const c=COST[rar][l]; if(c){a+=c[0];g+=c[1];} } return [a,g]; }
+const fmt = n => n.toLocaleString("cs-CZ");
+
+// Guardians the planner tracks
+const MYTHICS = [
+  ["hailey","Hailey"],["kun","Master Kun"],["chu","Rocket Chu"],["tao","Lazy Taoist"],["kitty","Kitty Mage"],["lance","Lancelot"],["mono","Monopoly Man"],
+  ["watt","Watt"],["indy","Indy"],["vayne","Vayne"],["bomba","Bomba"],["orc","Orc Shaman"],["grav","Graviton"],["frog","Frog Prince"],["batman","Bat Man"],["meow","Iron Meow"],["ato","Ato"],
+];
+const BASE = [
+  ["bandit","Bandit","common"],["shock","Shock Robot","rare"],["electro","Electro Robot","epic"],["tree","Tree","epic"],["eagle","Eagle General","epic"],["hunter","Hunter","epic"],["wolf","Wolf Warrior","epic"],
+];
+const ARTS = [["sb","Safe Box"],["mg","Money Gun"],["ls","Luck Stone"]];
+
+// Roadmap: phases → steps. goal: which goals include the phase. build: magic|phys|null
+const ROADMAP = [
+  {id:"n1",title:"Základ pro Normal",goals:["normal","hard","hell"],steps:[
+    {k:"bandit",r:"common",lv:6,why:"Ekonomika. Bandit pod lvl 6 dělá 5× míň mincí. První věc, kam dát duplikáty a denní obchod."},
+    {k:"shock",r:"rare",lv:6,why:"Modrý stun robot je páteř stun setupu (2 stacky na hráče)."},
+    {k:"electro",r:"epic",lv:6,why:"Fialový stun robot + 5 DR. 1 stack na hráče."},
+    {k:"tree",r:"epic",lv:6,why:"Stun. Stun bez slow je k ničemu, proto co nejdřív 6."},
+    {k:"eagle",r:"epic",lv:6,why:"ATK SPD pro celou desku = víc DPS, víc stunů, víc MP."},
+    {k:"hunter",r:"epic",lv:6,why:"DR 10 (15 na lvl 12). Ingredience pro Hailey, Lance, Orc, Vayne."},
+    {k:"hailey",r:"mythic",lv:6,why:"První mythik: největší ATK boost ze skillů (Star Power), pomáhá při nízkém sb/mg. Lvl 6 zdvojnásobí boost. Sheriff + Hunter + Sandman."},
+    {k:"kun",r:"mythic",lv:6,why:"Druhý mythik: levný, ATK boost z ultu Endure Rage. Lvl 6 přidá pasivní plameny. Tiger + Eagle + Paladin."},
+    {k:"chu",r:"mythic",lv:6,why:"Třetí mythik: Overclock 35 % → 50 % na lvl 6. Nejlepší wave clear z War Machine. War Machine + Shock Robot + Thrower."},
+  ]},
+  {id:"h0",title:"Podmínky pro vstup do Hard",goals:["hard","hell"],steps:[
+    {k:"sb",r:"art",lv:3,why:"Safe Box 3 = reálná šance nastřádat 30k na W40 a 300k na W80."},
+    {k:"mg",r:"art",lv:3,why:"Money Gun 3, aby zlato převedlo na dmg."},
+    {k:"bandit",r:"common",lv:12,why:"Bandit 12 (min. 9 pro +10 % ATK SPD). Hard ekonomika stojí na Banditech v Dungeonu."},
+    {k:"shock",r:"rare",lv:12,why:"Stun v Hard trvá o 50 % kratší dobu. Shock Robot 12 je minimum."},
+    {k:"electro",r:"epic",lv:9,why:"Všichni ne-mythici 9+ (+10 % ATK SPD na lvl 9)."},
+    {k:"tree",r:"epic",lv:9,why:"Ne-mythici 9+."},
+    {k:"eagle",r:"epic",lv:9,why:"Ne-mythici 9+."},
+    {k:"hunter",r:"epic",lv:9,why:"Ne-mythici 9+; na lvl 12 dává 15 DR místo 10."},
+  ]},
+  {id:"h1",title:"Stavba na Hard",goals:["hard","hell"],steps:[
+    {k:"tao",r:"mythic",lv:12,why:"Tao je slabý pod 12; na 12 se zdvojnásobí šance Razorwindu = 2× dmg. Nejsilnější magický wave clear, dokrývá Storm Giant. Storm Giant + Ranger + Water Elemental."},
+    {k:"kitty",r:"mythic",lv:6,why:"První support: MP regen. Lvl 6 přidá Kitty Punch (dobíjí si MP, častější ult). Eagle + 2× Water Elemental + Archer."},
+    {k:"lance",r:"mythic",lv:6,why:"Boss killer (% max HP přes Flame). Lvl 6 odemkne ult Flame Pillar = 10× skill dmg = 22 % HP bosse. Sheriff + Hunter + Paladin."},
+    {k:"mono",r:"mythic",lv:6,why:"Luck stone z ultu + 20 DR pasivně. Lvl 6 sníží cenu ultu o 20 %. Tree + Wolf Warrior + Demon Soldier."},
+  ]},
+  {id:"h2",title:"Konzistentní Hard",goals:["hard","hell"],steps:[
+    {k:"hailey",r:"mythic",lv:12,why:"Lvl 9 ATK SPD, lvl 10 poklad Stylish Suit (rychlejší Star Power), lvl 12 skill Seed of Light."},
+    {k:"kitty",r:"mythic",lv:12,why:"NEJDŮLEŽITĚJŠÍ 12. MP regen +100 %, pasivka 20 → 40 %, ult 20 MP místo 10. Bez ní Lance v Hard nefunguje."},
+    {k:"chu",r:"mythic",lv:12,why:"Lvl 9 ATK SPD, lvl 10 poklad Emergency Stop Button (šance nevybouchnout), lvl 12 Annihilation Rocket."},
+  ]},
+  {id:"e1",title:"Podmínky pro vstup do Hell",goals:["hell"],steps:[
+    {k:"lance",r:"mythic",lv:12,why:"Lance 12 je minimum pro Hell (Flame 3,3 % za skill dmg = 33 % za ult). Dál než 12 už nelevelovat."},
+    {k:"sb",r:"art",lv:5,why:"Safe Box 5 minimum, 6 doporučeno."},
+    {k:"mg",r:"art",lv:5,why:"Money Gun 5 minimum, 6 doporučeno."},
+    {k:"electro",r:"epic",lv:12,why:"Epiky jsou hlavní DPS v prvních 20–29 vlnách Hell. Min 12, ideál 15."},
+    {k:"tree",r:"epic",lv:12,why:"Epiky 12+ (ideál 15)."},
+    {k:"eagle",r:"epic",lv:12,why:"Epiky 12+ (ideál 15)."},
+    {k:"hunter",r:"epic",lv:12,why:"Epiky 12+ (ideál 15)."},
+    {k:"wolf",r:"epic",lv:12,why:"Epiky 12+ (ideál 15)."},
+    {k:"shock",r:"rare",lv:15,why:"Stuny na max, Hell má jen 18 polí a stun je přežití."},
+  ]},
+  {id:"e2",title:"Hell jádro (oba buildy)",goals:["hell"],steps:[
+    {k:"watt",r:"mythic",lv:12,why:"Boss killer s plochým dmg = jediná odpověď na Barrier. Nech nabíjet 250+ stacků a pop na W80. Storm Giant."},
+    {k:"indy",r:"mythic",lv:12,why:"Support, který v Hell šetří pole: jeden Indy = DR čtyř Mono nebo ATK SPD osmi Eaglů. Lvl 12: nový poklad nikdy horší než držený. Sheriff + Wolf Warrior + Sandman."},
+    {k:"mono",r:"mythic",lv:12,why:"20 % šance na dvojité stones, +10 % základní ATK SPD, jeden Mono 12 ≈ 1,3 Mono 6. Šetří místo."},
+  ]},
+  {id:"e3m",title:"Hell magický build",goals:["hell"],build:"magic",steps:[
+    {k:"tao",r:"mythic",lv:15,why:"Tao 12/15 je chleba magického buildu. Až 6 Taoistů ze Storm Giantů."},
+    {k:"meow",r:"mythic",lv:12,why:"Iron Meow V2 (potřebuje poklad): dmg jako Chu, nevybuchuje, +MP regen. War Machine + 2× Bandit."},
+    {k:"frog",r:"mythic",lv:12,why:"Volitelné: King Dian 12 dává solidní dmg, pokud ti z Frogů (ATK SPD pro Bandity) padne. Wolf + Tree + Barbarian + Thrower."},
+  ]},
+  {id:"e3p",title:"Hell fyzický build",goals:["hell"],build:"phys",steps:[
+    {k:"vayne",r:"mythic",lv:15,why:"Hlavní boss killer fyzického buildu. V ultu 4× dmg; 3 Kitty ji drží v ultu skoro trvale. Zvládne Barrier i Grunt. Hunter-based recept."},
+    {k:"bomba",r:"mythic",lv:12,why:"Fyzický wave clear z Tigera, 550 % AOE s max Workout. Cesta k Primeval Bomba. Tiger Master."},
+    {k:"orc",r:"mythic",lv:10,why:"Lvl 10 kvůli exkluzivnímu pokladu: +18 % fyz. dmg na stunnuté, 2× častější stun, 20 DR. Hunter + Electro Robot + Demon Soldier."},
+    {k:"ato",r:"mythic",lv:12,why:"Fyzická obdoba Kitty: 20 DR, +15 % fyz. dmg, zkracuje cooldown ultů (Chu, Vayne, Bomba). Vede k Chrono Ato."},
+    {k:"frog",r:"mythic",lv:15,why:"Volitelné: Reaper Frog (immortal) je extrémně silný wave clear a jde brzo. Wolf + Tree + Barbarian + Thrower."},
+  ]},
+  {id:"e4",title:"Volitelné / immortalové",goals:["hell"],steps:[
+    {k:"grav",r:"mythic",lv:12,why:"Graviton 12: 4,5 s stun, 13 % šance, 1 mythik nahradí stack robotů. S pokladem ještě lepší."},
+    {k:"hailey",r:"mythic",lv:15,why:"Hailey 15 + 6000 gemů = Awakened Hailey, obvykle první immortal (ATK boost jako 285k zlata v MG1)."},
+    {k:"batman",r:"mythic",lv:6,why:"Bat Man je spolehlivý fyzický wave clear už na lvl 1 a jeden z nejoblíbenějších pro Normal/Hard; v Hell metě nefiguruje. Level jen pokud ho hraješ."},
+  ]},
+];
+
+// Unit database for cards
+const UNITS = [
+  {n:"Lancelot",role:["boss","core"],dmg:"mag",tier:"S",leg:"Sheriff",rec:"Sheriff + Hunter (epic) + Paladin (rare)",lv:"6: ult Flame Pillar (10× skill dmg) · 12: Flame 3,3 %/hit = 33 % HP bosse za ult · dál nelevelovat",tre:"Flame level při summonu (až 10) + MP regen; šetří 20 luck stones",notes:["Flame pasivka se v zápase upgraduje luck stones: 0,2 % → 2,2 % (10× po 2 stones). Vždy vymaxovat.","Vyžaduje MP regen (Kitty 12). Kontrován bossem Barrier.","V Hell dělá díky Kitty i výborný wave clear.","2026: immortal forma Immortal Knight Lancelot (S-tier)."]},
+  {n:"Kitty Mage",role:["sup","core"],dmg:"mag",tier:"S",leg:"žádná",rec:"Eagle General (epic) + 2× Water Elemental + Archer",lv:"6: Kitty Punch (dobíjí si MP) · 12: MP regen +100 %, pasivka 40 %, ult 20 MP",tre:"+magický dmg po regenu MP, +skill chance",notes:["Nejdůležitější support ve hře. Get to 12 ASAP.","Chceš 4+ Kitty kolem Lance. Zrychluje Awakened Hailey, Mono, Indy, Kun.","Ult dává flat MP (20), ne procenta."]},
+  {n:"Hailey",role:["dps","core"],dmg:"mag",tier:"S",leg:"Sheriff",rec:"Sheriff + Hunter (epic) + Sandman (rare)",lv:"6: Star Power boost 2× · 9: ATK SPD · 10: poklad Stylish Suit · 12: Seed of Light · 15: Awakened Hailey",tre:"+15 % šance na Star Power, +30 % CRIT DMG",notes:["Star Power (max 10) roste náhodně při každém summonu za zlato – odkládej co nejdéle.","Skvělá pro guild battle, underground cave, PvP.","V Hell ji zastíní Tao/Chu při vyšším sb, ale Awakened forma je top."]},
+  {n:"Master Kun",role:["dps","core"],dmg:"mag",tier:"A",leg:"Tiger Master",rec:"Tiger Master + Eagle General (epic) + Paladin (rare)",lv:"6: pasivní plameny podle Endure Rage stacků · dál není potřeba",tre:"Rychlost Spiral of Fire",notes:["Ult Endure Rage = náhodný +1 až +99 ATK boost, reroll každým ultem. Cíl 80+.","Neškáluje s sb/mg, od Hard W50 / Hell W50 zaostává. Nikdy víc než 1 Kun.","2026: immortal forma Sage Kun."]},
+  {n:"Rocket Chu",role:["dps","core"],dmg:"fyz",tier:"S",leg:"War Machine",rec:"War Machine + Shock Robot (rare) + Thrower",lv:"6: Overclock 50 % · 9: ATK SPD · 10: poklad Emergency Stop Button · 12: Annihilation Rocket",tre:"30 % šance nevybouchnout, -20 % útoků na skill",notes:["Bez Overclocku slabý; overclockuj v boss vlnách do W40, pak hned.","Top fyzický wave clear až do konce Hell. Potřebuje DR.","Cooldown ult → profituje z Ato."]},
+  {n:"Lazy Taoist",role:["dps","core"],dmg:"mag",tier:"S",leg:"Storm Giant",rec:"Storm Giant + Ranger (rare) + Water Elemental",lv:"12: Razorwind 2× šance = 2× dmg (pod 12 slabý) · 15 pro Hell",tre:"Obsidian Hand Fan: delší Razorwind, +ATK SPD",notes:["Pravděpodobně nejsilnější jednotka na 12+. Pomalé útoky, chce stun a ATK SPD.","Nepotřebuje DR ani MP regen. Pravý sloupec desky, nezavazí.","V Hell až 6 Taoistů."]},
+  {n:"Monopoly Man",role:["sup","core"],dmg:"fyz",tier:"S",leg:"žádná",rec:"Tree (epic) + Wolf Warrior (epic) + Demon Soldier (rare)",lv:"6: ult -20 % MP · 12: 20 % dvojité stones, +10 % ATK SPD",tre:"Vrací MP po ultu a na začátku vlny",notes:["Ult Mutation = 1 luck stone. Pasivně 20 DR (nejpohodlnější zdroj).","Breakeven ~8 luck stones. V Hell situační (místo).","2026: immortal forma Devil Monopoly (S-tier)."]},
+  {n:"Watt",role:["boss"],dmg:"mag",tier:"S",leg:"Storm Giant",rec:"Storm Giant + … (ověř ve hře)",lv:"12 pro Hell",tre:"Vrací až 50 % energie po ultu, +ATK SPD",notes:["Základní útoky stackují energii, ult zdvojnásobí ATK SPD a +5 % ATK za stack.","Jediný spolehlivý counter na Barrier (plochý dmg). Summon do W51, pop na W80.","Chce ATK SPD, ne MP regen ani DR."]},
+  {n:"Vayne",role:["boss"],dmg:"fyz",tier:"S",leg:"žádná",rec:"Hunter (epic) + … (ověř ve hře)",lv:"15 pro fyzický Hell build",tre:"Tumble cooldown, +25 % dmg po pohybu",notes:["Single-target boss killer, v ultu 4× dmg. Zvládne Barrier i Grunt.","Wave clear jen do ~W25. Potřebuje 200+ DR a Kitty/Ato.","Jeden z mála boss killerů, co vyčistí Dungeon (s Zap)."]},
+  {n:"Indy",role:["sup"],dmg:"fyz",tier:"S",leg:"Sheriff",rec:"Sheriff + Wolf Warrior (epic) + Sandman (rare)",lv:"6: odhalí polohu pokladu · 12: nový poklad nikdy nižší tier",tre:"Šance na vyšší tier při vykopání",notes:["Ult Fortune & Glory vykope buff: Old Shield (DR až 85), Quick Sword (ATK SPD až 40 %), Strong Sword (ATK), Energy Drink (MP regen), Lucky Gem (+2/3 stones za vlnu), Coin Pocket (+100–240 mincí za vlnu).","V Hell staple: jeden Indy = 4 Mono DR nebo 8 Eaglů ATK SPD.","Brzy Lucky Gem/Coin Pocket, od W40–60 přepnout na DR/ATK SPD."]},
+  {n:"Bat Man",role:["dps"],dmg:"fyz",tier:"A",leg:"žádná",rec:"ověř ve hře",lv:"Silný už na lvl 1; 6 pro konzistenci",tre:"+30 % dmg 10 s po úspěšném upgradu, +CRIT",notes:["Oblíbený AOE wave clear pro Normal/Hard, sázkový upgrade (+16 = challenge).","Potřebuje DR a stun (hit všech mobů naráz).","V Hell metě chybí."]},
+  {n:"Frog Prince / King Dian",role:["dps"],dmg:"fyz/mag",tier:"B / A (Dian)",leg:"žádná",rec:"Wolf Warrior (epic) + Tree (epic) + Barbarian + Thrower",lv:"12: curse lift 35 % → 50 %; 15 pro Reaper Frog cestu",tre:"Až 70 % refund materiálu při neúspěchu, +ult dmg",notes:["Frog dává ATK SPD (dobrý pro Bandity brzo). Curse lift → King Dian (magický DPS).","Z Diana lze udělat Reaper Frog (immortal), z něj Reaper Dian = nejsilnější DPS immortal.","Nespoléhej na Froga jako hlavní wave clear (RNG)."]},
+  {n:"Graviton",role:["sup"],dmg:"mag",tier:"A",leg:"žádná",rec:"ověř ve hře",lv:"12: stun 4,5 s (1,29 stun/s, víc než stack robotů)",tre:"+Overheat z pohlcení (levnější Super Graviton)",notes:["Nejlepší mythic stun, 1 populace místo 3. Ideál pro 100% stunlock v Hell.","Immortal Super Graviton doplňuje mythic formu."]},
+  {n:"Orc Shaman",role:["sup"],dmg:"fyz",tier:"A",leg:"žádná",rec:"Hunter (epic) + Electro Robot (epic) + Demon Soldier (rare)",lv:"10 kvůli pokladu · 12: +30 DR (nestackuje)",tre:"+18 % fyz. dmg na stunnuté 8 s, 2× stun frekvence",notes:["20 DR, ranged stun a buff fyz. dmg v jednom poli. Pro fyzický Hell build s pokladem klíčový."]},
+  {n:"Bomba",role:["dps"],dmg:"fyz",tier:"A",leg:"Tiger Master",rec:"Tiger Master + … (ověř ve hře)",lv:"12 pro Hell",tre:"+Workout šance, +20 % fyz. dmg",notes:["550 % AOE základní útok s max Workout. Soupeří s Lancem o melee pole.","Vede k Primeval Bomba (0,1 % za útok při max Workout, stackuj ATK SPD)."]},
+  {n:"Iron Meow",role:["dps","sup"],dmg:"mag",tier:"A",leg:"War Machine",rec:"War Machine + 2× Bandit",lv:"12 ideál (V2 vyžaduje exkluzivní poklad)",tre:"+50 % skill dmg V2, +CRIT",notes:["Dmg podobný Chu, nevybuchuje, +MP regen. Skvělý s Tao (ult na bosse).","Alternativa k Chu z War Machine v magickém buildu."]},
+  {n:"Ato",role:["sup"],dmg:"fyz",tier:"A",leg:"žádná",rec:"ověř ve hře",lv:"12 pro fyzický build",tre:"+cooldown redukce, +skill chance",notes:["20 DR, +15 % fyz. dmg spojenců, ult zkracuje cooldowny (Chu, Vayne, Bomba, Ninja, Penguin).","Chrono Ato po 100 s celkové redukce cooldownů."]},
+  {n:"Coldy",role:["sup"],dmg:"mag",tier:"B",leg:"Storm Giant",rec:"Storm Giant + … (ověř ve hře)",lv:"6",tre:"+ledovce, +MP regen",notes:["Pasivní 50 slow + skill 50 slow, stun sám o sobě slabý. Obří dosah stunuje i kde nechceš.","Jen pro sólo hraní; Storm Giant je lepší dát Tao/Watt."]},
+  {n:"Dragon / Drain",role:["dps"],dmg:"mag",tier:"A (Drain) / C (Dragon)",leg:"žádná",rec:"Eagle Generaly merguj do vajec: Dragon Egg → Dragon, Great Egg (8 Eaglů) → Drain",lv:"Drain 12 volitelně",tre:"+3 % líhnutí Drain egg, +100 % Flame dmg",notes:["Drain: nejvyšší wave clear i single target dmg ve hře, ale drahý a pozdní. Luxus.","Dragon samotný nedoporučen, jen Drain. Oba → Dark Lord Dragon (immortal)."]},
+  {n:"Penguin Musician",role:["sup"],dmg:"mag",tier:"B",leg:"žádná",rec:"ověř ve hře",lv:"Nechat na 1",tre:"Lepší performance z Variation",notes:["Aktivní +20 % ATK SPD (násobí se s pasivními zdroji). Pomáhá Banditům farmit. Stackuje se s Tiger Shout, ne sám se sebou."]},
+  {n:"Pulse Generator",role:["sup"],dmg:"mag",tier:"B",leg:"žádná",rec:"bez legendárky (ověř ve hře)",lv:"10 kvůli pokladu",tre:"+100 % nabíjení, +skill dmg",notes:["S pokladem dobrý slow a slušný dmg na W20/W30 v Hell (korejská meta). Doctor Pulse žere stuny."]},
+  {n:"Ninja",role:["dps"],dmg:"fyz",tier:"F / A (Ghost)",leg:"žádná",rec:"1 epic + 2 rare (ověř ve hře)",lv:"—",tre:"+15 % reaktivace Assassinate",notes:["Mythic Ninja slabý. Ghost Ninja jen jako doplněk fyzické desky / baterka pro Chrono Ato."]},
+  {n:"Blob",role:["dps"],dmg:"fyz",tier:"F",leg:"žádná",rec:"Hunter (epic) + Eagle General (epic) + Bandit",lv:"—",tre:"+Devour po zabití bosse",notes:["20 DR, ale recept tě stojí 15 DR + ATK SPD + Bandita. Nesummonovat. 2026: Blob Squad (immortal)."]},
+  {n:"Mama",role:["sup"],dmg:"mag",tier:"D / A (Grand Mama)",leg:"žádná",rec:"ověř ve hře",lv:"—",tre:"30 % imp při zabití Fear skillem",notes:["Sama slabá; s pokladem cesta ke Grand Mama (support +dmg, oživování). Musí být před W10."]},
+  {n:"Tar",role:["dps"],dmg:"fyz",tier:"S (2026) / C (Hell 2025)",leg:"žádná",rec:"ověř ve hře",lv:"—",tre:"30 % šance na tier 3 Tar",notes:["Tier 3 Tar je silný; Cannibalism počítá jako smrt pro Grand Mama. Tier listy 2026 ho řadí do S."]},
+  {n:"Verdee",role:["dps"],dmg:"fyz",tier:"S (2026)",leg:"žádná",rec:"ověř ve hře",lv:"—",tre:"-50 % cooldown ultu",notes:["Cooldown ult (profituje z Ato). Evergreen Verdee: 28 Treeee z ultu + 3 epické Tree."]},
+  {n:"Roka",role:["dps"],dmg:"fyz",tier:"S (2026)",leg:"—",rec:"nová jednotka 2026 (ověř ve hře)",lv:"—",tre:"80 % šance plně přebít Explosive Rounds, +30 % CRIT DMG",notes:["Ranged fyzický DPS s jedněmi z nejlepších statů ve hře podle komunity 2026."]},
+  {n:"Zap",role:["boss"],dmg:"mag",tier:"D",leg:"žádná",rec:"ověř ve hře",lv:"—",tre:"+100 % dmg na stejný cíl (Arcane Amplification)",notes:["Slabý boss killer, ale vyčistí Dungeon."]},
+];
+
+// ---------- STATE ----------
+const KEY="ld-planner-v1";
+let S = {goal:"hard",build:"magic",lv:{}};
+try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.lv) S=s; }catch(e){}
+// example values on first open so the page shows what it does
+if(!Object.keys(S.lv).length){ S.lv={bandit:9,shock:9,electro:6,tree:6,eagle:6,hunter:6,wolf:4,hailey:6,kun:6,chu:6,lance:1,kitty:3,sb:3,mg:3,ls:2}; S.example=true; }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+const $=s=>document.querySelector(s);
+const lvOf=k=>+(S.lv[k]||0);
+
+// ---------- INPUTS ----------
+function mkInput(k,label,rar){
+  const d=document.createElement("div");d.className="lvl";
+  d.innerHTML=`<span class="n"><span class="dot ${rar}"></span>${label}</span><input type="number" min="0" max="${rar==='art'?11:15}" data-k="${k}" value="${lvOf(k)}" aria-label="${label} level">`;
+  d.querySelector("input").addEventListener("input",e=>{S.lv[k]=Math.max(0,+e.target.value||0);delete S.example;save();render();});
+  return d;
+}
+MYTHICS.forEach(([k,l])=>$("#in-mythic").append(mkInput(k,l,"mythic")));
+BASE.forEach(([k,l,r])=>$("#in-base").append(mkInput(k,l,r)));
+ARTS.forEach(([k,l])=>$("#in-art").append(mkInput(k,l,"art")));
+document.querySelectorAll("#goal button").forEach(b=>b.addEventListener("click",()=>{S.goal=b.dataset.g;save();render();}));
+document.querySelectorAll("#build button").forEach(b=>b.addEventListener("click",()=>{S.build=b.dataset.b;save();render();}));
+$("#reset").addEventListener("click",()=>{S={goal:S.goal,build:S.build,lv:{}};save();document.querySelectorAll(".lvl input").forEach(i=>i.value=0);render();});
+
+// ---------- ROADMAP RENDER ----------
+function render(){
+  document.querySelectorAll("#goal button").forEach(b=>b.classList.toggle("on",b.dataset.g===S.goal));
+  document.querySelectorAll("#build button").forEach(b=>b.classList.toggle("on",b.dataset.b===S.build));
+  const R=$("#roadmap");R.innerHTML="";
+  let stones=0,gold=0,dups=0,todo=0,done=0,nextFound=false,nextName="";
+  // dedupe: for a key, only the highest required level for chosen goal counts in totals; but steps shown per phase
+  const seenTarget={};
+  ROADMAP.filter(p=>p.goals.includes(S.goal)&&(!p.build||p.build===S.build)).forEach(p=>{
+    const ph=document.createElement("div");ph.className="phase";ph.innerHTML=`<span class="eyebrow">${p.title}</span>`;R.append(ph);
+    const list=document.createElement("div");list.className="steps";
+    p.steps.forEach(st=>{
+      const cur=lvOf(st.k), name=(MYTHICS.find(m=>m[0]===st.k)||BASE.find(m=>m[0]===st.k)||ARTS.find(m=>m[0]===st.k))[1];
+      const isDone=cur>=st.lv; let cs=0,cg=0,cd=0;
+      if(!isDone && st.r!=="art"){
+        const from=Math.max(cur,seenTarget[st.k]||0,1);
+        const [a,g]=costRange(st.r,from,st.lv);
+        if(st.r==="mythic"||st.r==="immortal"){cs=a;stones+=a;} else {cd=a;dups+=a;}
+        cg=g;gold+=g;
+      }
+      if(!isDone) seenTarget[st.k]=Math.max(seenTarget[st.k]||0,st.lv);
+      isDone?done++:todo++;
+      const el=document.createElement("div");el.className="step"+(isDone?" done":"")+(!isDone&&!nextFound?" next":"");
+      if(!isDone&&!nextFound){nextFound=true;nextName=`${name} ${st.lv}`;}
+      const costHtml= isDone?`<span class="cost">hotovo</span>` : st.r==="art"?`<span class="cost">artefakt<br>klíče</span>` :
+        `<span class="cost">${cs?`<b>${fmt(cs)} kamenů</b>`:`<b>${fmt(cd)} dupl.</b>`}<i>${fmt(cg)} zlata</i></span>`;
+      el.innerHTML=`<span class="st">${isDone?"✓":st.lv}</span><div><div class="t">${name} → lvl ${st.lv} <span class="muted small">(máš ${cur})</span></div><div class="why">${st.why}</div></div>${costHtml}`;
+      list.append(el);
+    });
+    R.append(list);
+  });
+  $("#tiles").innerHTML=`
+    <div class="tile"><div class="eyebrow">Další krok</div><div class="v" style="font-family:'Fredoka',sans-serif;font-size:1.15rem">${nextName||"Vše splněno"}</div></div>
+    <div class="tile stone"><div class="eyebrow">Mythic Stones do cíle</div><div class="v">${fmt(stones)}</div></div>
+    <div class="tile coin"><div class="eyebrow">Zlato do cíle</div><div class="v">${fmt(gold)}</div></div>
+    <div class="tile"><div class="eyebrow">Duplikátů (ne-mythici)</div><div class="v">${fmt(dups)}</div></div>
+    <div class="tile"><div class="eyebrow">Kroky</div><div class="v">${done} / ${done+todo}</div><div class="meter"><i style="width:${done+todo?Math.round(done/(done+todo)*100):0}%"></i></div></div>`;
+  $("#nav-next").textContent = todo? `${todo}` : "✓";
+  if(S.example && !$("#example-note")){ const n=document.createElement("div");n.id="example-note";n.className="callout";n.style.marginBottom="1rem";n.textContent="Ukázkové hodnoty (typický účet po pár týdnech). Přepiš je svými levely, uloží se v prohlížeči.";$("#tiles").before(n);}
+  if(!S.example && $("#example-note")) $("#example-note").remove();
+}
+
+// ---------- CALCULATORS ----------
+function calcCost(){
+  const r=$("#c-rar").value, f=+$("#c-from").value, t=+$("#c-to").value;
+  if(t<=f){$("#c-out").textContent="Cílová úroveň musí být vyšší.";return;}
+  const [a,g]=costRange(r,f,t);
+  $("#c-out").innerHTML=`${f} → ${t}: <b>${fmt(a)} ${UNIT_LABEL[r]}</b> + <span style="color:var(--coin)">${fmt(g)} zlata</span>`;
+  let h=`<tr><th>Level</th><th class="num">${UNIT_LABEL[r]}</th><th class="num">Zlato</th></tr>`;
+  for(let l=2;l<=15;l++){const c=COST[r][l];h+=`<tr class="${l>f&&l<=t?'hl':''}"><td>${l-1} → ${l}</td><td class="num">${fmt(c[0])}</td><td class="num">${fmt(c[1])}</td></tr>`;}
+  $("#c-table").innerHTML=h;
+}
+["#c-rar","#c-from","#c-to"].forEach(s=>$(s).addEventListener("input",calcCost));
+function calcM(){const n=Math.min(31,Math.max(0,+$("#m-n").value||0));const mult=1+0.5*n;let cost=0;for(let i=0;i<n;i++)cost+=2+i;$("#m-out").innerHTML=`${n} upgradů = <b>${mult.toLocaleString("cs-CZ")}× dmg</b> (+${(mult-1)*100} %), celkem <span style="color:var(--stone)">${cost} luck stones</span>`;}
+$("#m-n").addEventListener("input",calcM);
+function calcD(){
+  const v=id=>+$(id).value||0;
+  const dr=v("#d-mono")*20+v("#d-h12")*15+v("#d-h")*10+v("#d-el")*5+v("#d-dem")*7.5+v("#d-orc")*20+v("#d-indy")+v("#d-pet");
+  const t=S.goal==="hell"?220:S.goal==="hard"?200:160;
+  $("#d-out").innerHTML=`Celkem <b>${dr} DR</b> · cíl pro ${S.goal==="hell"?"Hell 220":S.goal==="hard"?"Hard 200":"Normal 160"} ${dr>=t?'<span style="color:var(--ok)">✓ splněno</span>':`<span style="color:var(--warn)">chybí ${t-dr}</span>`}`;
+  $("#d-bar").style.width=Math.min(100,dr/t*100)+"%";
+}
+document.querySelectorAll("#v-calc .lvlgrid input").forEach(i=>i.addEventListener("input",calcD));
+function calcG(){const g=+$("#g-gold").value||0;const b=g*0.0091;$("#g-out").innerHTML=`${fmt(g)} zlata ≈ <b>+${Math.round(b)} % ATK</b> (${(1+b/100).toFixed(1)}× dmg) z Money Gun`;}
+$("#g-gold").addEventListener("input",calcG);
+
+// ---------- UNIT CARDS ----------
+function renderCards(f){
+  const C=$("#cards");C.innerHTML="";
+  UNITS.filter(u=>f==="all"||u.role.includes(f)).forEach(u=>{
+    const tierCls=(u.tier.match(/^[SABCDF]/)||["C"])[0];
+    const c=document.createElement("article");c.className="card";
+    c.innerHTML=`<div class="top"><h3>${u.n}</h3><span class="pill ${tierCls}">${u.tier}</span></div>
+      <div class="tags"><span class="pill ${u.dmg.includes('fyz')?'fyz':'mag'}">${u.dmg==="fyz"?"fyzický":u.dmg==="mag"?"magický":u.dmg}</span>${u.role.map(r=>`<span class="pill">${{dps:"wave clear",boss:"boss killer",sup:"support",core:"jádro"}[r]}</span>`).join("")}<span class="pill">legendárka: ${u.leg}</span></div>
+      <div class="rec"><b>Recept</b>${u.rec}</div>
+      <div class="rec"><b>Zlomové levely</b>${u.lv}</div>
+      <div class="rec"><b>Exkluzivní poklad (lvl 10+)</b>${u.tre}</div>
+      <ul>${u.notes.map(n=>`<li>${n}</li>`).join("")}</ul>`;
+    C.append(c);
+  });
+}
+document.querySelectorAll("#ufilter button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#ufilter button").forEach(x=>x.classList.toggle("on",x===b));renderCards(b.dataset.f);}));
+
+// ---------- MATCH TABS ----------
+document.querySelectorAll("#mfilter button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#mfilter button").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll(".mode").forEach(m=>m.hidden=m.id!=="m-"+b.dataset.m);}));
+
+// ---------- NAV ----------
+document.querySelectorAll("#nav button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x===b));
+  document.querySelectorAll("section.view").forEach(s=>s.classList.toggle("on",s.id==="v-"+b.dataset.v));
+  window.scrollTo({top:0});
+}));
+
+render();calcCost();calcM();calcD();calcG();renderCards("all");
+</script>
+</body>
+</html>
