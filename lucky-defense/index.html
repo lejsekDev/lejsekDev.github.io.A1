@@ -657,7 +657,7 @@ const KEY="ld-planner-v1";
 let S = {goal:"hard",build:"magic",lv:{}};
 try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.lv) S=s; }catch(e){}
 // example values on first open so the page shows what it does
-if(!Object.keys(S.lv).length){ S.lv={bandit:12,shock:12,electro:12,tree:12,eagle:12,hunter:12,wolf:12,hailey:15,kun:6,chu:12,tao:12,kitty:12,lance:12,mono:12,indy:6,grav:12,frog:15,roka:15,i_hailey:3,i_frog:9,i_roka:1,sb:6,mg:6,ls:6}; S.goal="hell"; S.example=true; }
+if(!Object.keys(S.lv).length){ S.lv={bandit:12,shock:12,electro:12,tree:12,eagle:12,hunter:12,wolf:12,hailey:15,kun:6,chu:12,tao:12,kitty:12,lance:12,mono:12,indy:6,grav:12,frog:15,roka:15,watt:1,vayne:6,bomba:1,orc:1,batman:1,meow:1,ato:1,i_hailey:3,i_frog:9,i_roka:1,sb:6,mg:6,ls:6}; S.goal="hell"; S.example=true; }
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 const $=s=>document.querySelector(s);
 const lvOf=k=>+(S.lv[k]||0);
@@ -716,7 +716,7 @@ function render(){
     <div class="tile"><div class="eyebrow">Duplikátů (ne-mythici)</div><div class="v">${fmt(dups)}</div></div>
     <div class="tile"><div class="eyebrow">Kroky</div><div class="v">${done} / ${done+todo}</div><div class="meter"><i style="width:${done+todo?Math.round(done/(done+todo)*100):0}%"></i></div></div>`;
   $("#nav-next").textContent = todo? `${todo}` : "✓";
-  if(S.example && !$("#example-note")){ const n=document.createElement("div");n.id="example-note";n.className="callout";n.style.marginBottom="1rem";n.textContent="Předvyplněno podle screenshotů účtu ližbrk (září 2026); základní jednotky a Watt/Vayne/Ato/Bomba jsou odhad, uprav je. Změny se ukládají v prohlížeči.";$("#tiles").before(n);}
+  if(S.example && !$("#example-note")){ const n=document.createElement("div");n.id="example-note";n.className="callout";n.style.marginBottom="1rem";n.textContent="Předvyplněno podle screenshotů účtu ližbrk (září 2026); základní jednotky jsou odhad, uprav je. Změny se ukládají v prohlížeči.";$("#tiles").before(n);}
   if(!S.example && $("#example-note")) $("#example-note").remove();
 }
 
