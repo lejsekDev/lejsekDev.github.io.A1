@@ -4,7 +4,7 @@ Formát hlášení: cvik – váha × opakování (RIR), výdrže v sekundách, 
 
 ---
 
-## Pull 1 – Front lever A + těžké tahy (první session = kalibrace)
+## Pull 1 – Front lever A + těžké tahy 
 
 **Plán:**
 
@@ -15,15 +15,9 @@ Formát hlášení: cvik – váha × opakování (RIR), výdrže v sekundách, 
 - Vis 30 s
 - 2× tuck front lever 5 s, lehce
 
-**Front lever test, ~10 min**
-- Postupně tuck → advanced tuck → straddle → full.
-- Z každé progrese 1 výdrž, pauza 2–3 min.
-- Konec ve chvíli, kdy neudržíš 3 s s napnutými lokty a boky v linii.
-
-**Front lever A, ~20 min**
-- 2× max pokus o další progresi
-- 2× výdrž v aktuální progresi na ~70 %
-- 2× negativy (2 opakování, 30 s mezi nimi)
+**Front lever, ~20 min**
+- 3× max výdrž v nejtěžší progresi, kterou udržíš ~5 s (pauza 3 min)
+- 2× negativy (2 opakování, 30 s mezi nimi, pauza 2 min)
 
 **Posilovna, ~50 min**
 
